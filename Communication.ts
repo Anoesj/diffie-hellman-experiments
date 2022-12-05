@@ -20,12 +20,10 @@ export class Communication {
     console.log(`Creating communication line between ${actor1.name} and ${actor2.name}. Interceptors:`, interceptors.map(i => i.name));
 
     this.communicationParameters = {
-      base: 7,
-      modulus: 11,
       // base: 109,
       // modulus: 431,
-      // base: getRandomPrime(),
-      // modulus: getRandomPrime(),
+      base: getRandomPrime(),
+      modulus: getRandomPrime(),
     };
 
     console.log(`Actors agreed upon the following communication parameters:`, this.communicationParameters);

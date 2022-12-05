@@ -1,6 +1,6 @@
 import { Actor } from './Actor.ts';
 import { arrayBufferToHexString, decryptData } from './crypto.ts';
-import { primes } from './data.ts';
+import { getRandomPrimes } from './data.ts';
 import type { CommunicationParameters, PrivateKey, PublicKey, SharedSecret } from './types.d.ts';
 import type { Communication } from './Communication.ts';
 
@@ -115,9 +115,11 @@ export class Interceptor extends Actor {
 
     // Guess what the private key of the other actor is by calculating public keys
     // with random primes as private keys.
-    for (const prime of primes) {
+    // NOTE: This can take a looooong time to brute force.
+    for (const prime of getRandomPrimes()) {
       if (base ** prime % modulus === actorPublicKey) {
         possiblePrivateKeysActor.push(prime);
+        break;
       }
     }
 

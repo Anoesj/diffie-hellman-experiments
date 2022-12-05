@@ -1,9 +1,7 @@
-import { primes } from './data.ts';
-
-export type Prime = typeof primes[number];
+export type Prime = bigint;
 export type PrivateKey = Prime;
-export type PublicKey = number;
-export type SharedSecret = number;
+export type PublicKey = bigint;
+export type SharedSecret = bigint;
 export type CommunicationParameters = {
   base: Prime;
   modulus: Prime;
