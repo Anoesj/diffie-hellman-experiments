@@ -1,19 +1,21 @@
+import type { Communication } from './Communication.ts';
 import { encryptData, decryptData } from './crypto.ts';
-import type { CommunicationParameters, Prime, PublicKey, SharedSecret } from './types.d.ts';
+import type { CommunicationParameters, PrivateKey, PublicKey, SharedSecret } from './types.d.ts';
 
 export class Actor {
 
   name: string;
 
-  #privateKey: Prime;
+  #privateKey: PrivateKey;
 
   #collaborations: {
     actor: Actor;
     publicKey: PublicKey;
+    communication: Communication;
     sharedSecret: SharedSecret;
   }[] = [];
 
-  constructor (name: string, privateKey: Prime) {
+  constructor (name: string, privateKey: PrivateKey) {
     this.name = name;
     this.#privateKey = privateKey;
   }
@@ -22,37 +24,41 @@ export class Actor {
     console.log(`[${this.name}] ${msg}`, ...args);
   }
 
-  calculatePublicKey (communicationParameters: CommunicationParameters) {
+  calculatePublicKey (communicationParameters: CommunicationParameters): PublicKey {
     return communicationParameters.base ** this.#privateKey % communicationParameters.modulus;
   }
 
-  addCollaboration (actor: Actor, actorPublicKey: PublicKey, communicationParameters: CommunicationParameters) {
-    this.#collaborations.push({
+  addCollaboration (actor: Actor, actorPublicKey: PublicKey, communication: Communication) {
+    const collaboration = {
       actor,
       publicKey: actorPublicKey,
-      sharedSecret: this.calculateSharedSecret(actorPublicKey, communicationParameters),
-    });
+      communication,
+      sharedSecret: this.calculateSharedSecret(actorPublicKey, communication.communicationParameters),
+    };
+
+    this.log(`Added collaboration:`, collaboration);
+
+    this.#collaborations.push(collaboration);
   }
 
-  calculateSharedSecret (actorPublicKey: PublicKey, communicationParameters: CommunicationParameters) {
-    const sharedSecret = actorPublicKey ** this.#privateKey % communicationParameters.modulus;
-    this.log('Calculated shared secret:', sharedSecret);
-    return sharedSecret;
+  calculateSharedSecret (actorPublicKey: PublicKey, communicationParameters: CommunicationParameters): SharedSecret {
+    return actorPublicKey ** this.#privateKey % communicationParameters.modulus;
   }
 
   async sendData (data: string, actor: Actor) {
-    this.log(`Sending data to ${actor.name}:`, data);
+    this.log(`Sending to ${actor.name}: “${data}”`);
     const collaboration = this.#collaborations.find(collaboration => collaboration.actor === actor)!;
     const { sharedSecret } = collaboration;
     const encryptedData = await encryptData(data, sharedSecret);
-    await actor.receiveData(encryptedData, this);
+    await collaboration.communication.send(encryptedData, actor, this);
   }
 
-  async receiveData (encryptedData: string, actor: Actor) {
-    this.log(`Received encrypted data from ${actor.name}:`, encryptedData);
+  async receiveData (encryptedData: ArrayBuffer, actor: Actor) {
+    this.log(`Received encrypted data from ${actor.name}`);
     const collaboration = this.#collaborations.find(collaboration => collaboration.actor === actor)!;
     const { sharedSecret } = collaboration;
     const data = await decryptData(encryptedData, sharedSecret);
+    this.log(`Decrypted data from ${actor.name}: “${data}”`);
     return data;
   }
 
