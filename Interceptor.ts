@@ -1,5 +1,5 @@
 import { Actor } from './Actor.ts';
-import { decryptData } from './crypto.ts';
+import { arrayBufferToHexString, decryptData } from './crypto.ts';
 import { primes } from './data.ts';
 import type { CommunicationParameters, PrivateKey, PublicKey, SharedSecret } from './types.d.ts';
 import type { Communication } from './Communication.ts';
@@ -61,14 +61,15 @@ export class Interceptor extends Actor {
   async interceptData (
     encryptedData: ArrayBuffer,
     communication: Communication,
-    receivingActor: Actor,
     sendingActor: Actor,
+    receivingActor: Actor,
   ) {
     // This is what an interceptor would see if he intercepted data sent between two actors.
     this.log('Intercepted data:', {
       receivingActor,
       sendingActor,
-      encryptedData,
+      // To hex string for readability
+      encryptedData: arrayBufferToHexString(encryptedData),
     });
 
     const interceptedCommunicationData = this.interceptedCommunications.get(communication);
@@ -77,25 +78,32 @@ export class Interceptor extends Actor {
       throw new Error('No intercepted communication data found');
     }
 
+    const logDecryptedData = (decryptedData: string) => {
+      this.log(`Decrypted message sent from ${sendingActor.name} to ${receivingActor.name}: “${decryptedData}”`);
+    };
+
     if (interceptedCommunicationData.workingKeyCombination) {
       const data = await decryptData(encryptedData, interceptedCommunicationData.workingKeyCombination.sharedSecret);
-      this.log(`Decrypted data sent from ${sendingActor.name} to ${receivingActor.name}: “${data}”`);
+      logDecryptedData(data);
       return;
     }
 
     for (const possibleKeyCombination of interceptedCommunicationData.possibleKeyCombinations) {
-      this.log('Trying to decrypt data with possible key combination', possibleKeyCombination);
+      this.log('Trying to decrypt message with possible key combination', possibleKeyCombination);
 
       try {
         const data = await decryptData(encryptedData, possibleKeyCombination.sharedSecret);
-        this.log(`Cracket encryption! Decrypted data sent from ${sendingActor.name} to ${receivingActor.name}: “${data}”`);
+        this.log(`😎 Cracket encryption of communication between ${communication.actor1.name} and ${communication.actor2.name}`);
+        logDecryptedData(data);
         interceptedCommunicationData.workingKeyCombination = possibleKeyCombination;
-        break;
+        return;
       }
       catch {
         // If decryption fails, it's not the right combination.
       }
     }
+
+    this.log(`🤷 Could not decrypt message from ${sendingActor.name} to ${receivingActor.name}`);
   }
 
   calculatePossiblePrivateKeys (

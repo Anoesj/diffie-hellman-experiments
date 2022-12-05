@@ -18,6 +18,8 @@ export class Actor {
   constructor (name: string, privateKey: PrivateKey) {
     this.name = name;
     this.#privateKey = privateKey;
+
+    this.log(`I’m a new actor with private key:`, privateKey);
   }
 
   log (msg: string, ...args: unknown[]) {
@@ -25,7 +27,9 @@ export class Actor {
   }
 
   calculatePublicKey (communicationParameters: CommunicationParameters): PublicKey {
-    return communicationParameters.base ** this.#privateKey % communicationParameters.modulus;
+    const publicKey: PublicKey = communicationParameters.base ** this.#privateKey % communicationParameters.modulus;
+    this.log(`Calculated public key:`, publicKey);
+    return publicKey;
   }
 
   addCollaboration (actor: Actor, actorPublicKey: PublicKey, communication: Communication) {
@@ -46,7 +50,7 @@ export class Actor {
   }
 
   async sendData (data: string, actor: Actor) {
-    this.log(`Sending to ${actor.name}: “${data}”`);
+    this.log(`Sending encrypted message to ${actor.name}: “${data}”`);
     const collaboration = this.#collaborations.find(collaboration => collaboration.actor === actor)!;
     const { sharedSecret } = collaboration;
     const encryptedData = await encryptData(data, sharedSecret);
@@ -54,11 +58,11 @@ export class Actor {
   }
 
   async receiveData (encryptedData: ArrayBuffer, actor: Actor) {
-    this.log(`Received encrypted data from ${actor.name}`);
+    this.log(`Received encrypted message from ${actor.name}`);
     const collaboration = this.#collaborations.find(collaboration => collaboration.actor === actor)!;
     const { sharedSecret } = collaboration;
     const data = await decryptData(encryptedData, sharedSecret);
-    this.log(`Decrypted data from ${actor.name}: “${data}”`);
+    this.log(`Decrypted message from ${actor.name}: “${data}”`);
     return data;
   }
 

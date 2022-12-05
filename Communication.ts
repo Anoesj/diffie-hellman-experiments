@@ -17,6 +17,8 @@ export class Communication {
     this.actor2 = actor2;
     this.interceptors = interceptors;
 
+    console.log(`Creating communication line between ${actor1.name} and ${actor2.name}. Interceptors:`, interceptors.map(i => i.name));
+
     this.communicationParameters = {
       base: 7,
       modulus: 11,
@@ -25,6 +27,8 @@ export class Communication {
       // base: getRandomPrime(),
       // modulus: getRandomPrime(),
     };
+
+    console.log(`Actors agreed upon the following communication parameters:`, this.communicationParameters);
 
     this.actor1PublicKey = actor1.calculatePublicKey(this.communicationParameters);
     this.actor2PublicKey = actor2.calculatePublicKey(this.communicationParameters);
@@ -46,8 +50,10 @@ export class Communication {
     }
 
     if (receivingActor === sendingActor) {
-      throw new Error('Cannot send data to self');
+      throw new Error('Cannot send message to self');
     }
+
+    console.log(`[${sendingActor.name} -> ${receivingActor.name}] Transferring encrypted message`);
 
     for (const interceptor of this.interceptors) {
       await interceptor.interceptData(encryptedData, this, sendingActor, receivingActor);

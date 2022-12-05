@@ -74,8 +74,7 @@ export async function decryptData (encryptedData: ArrayBuffer, sharedSecret: Sha
   return td.decode(decryptedData);
 }
 
-// export function arrayBufferToHexString (hash: ArrayBuffer): string {
-//   const hashArray = Array.from(new Uint8Array(hash));
-//   const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-//   return hashHex;
-// }
+export function arrayBufferToHexString (encryptedData: ArrayBuffer): string {
+  return new Uint8Array(encryptedData)
+    .reduce((acc, byte) => acc + byte.toString(16).padStart(2, '0'), '');
+}
